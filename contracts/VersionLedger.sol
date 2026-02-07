@@ -1,26 +1,23 @@
-// SPDX-License-Identifier: GPL-3.0
-
 pragma solidity >=0.7.0 <0.9.0;
 
-contract VersionHistory {
-
+contract VersionLedger {
     struct Version {
-        bytes32 contentHash;   
-        uint256 parent;     // keep track of previous version 
+        bytes32 contentHash;
+        uint256 parent;
         uint256 timestamp;
         address author;
     }
 
-    Version[] public versions;
+    Version[] private versions;
 
-    mapping(address => Version) public version;
-
-    constructor(bytes32[] memory x) {}
-
-    function appendVersion(bytes32 contentHash, uint256 parent, uint256 timestamp, FdcProof calldata proof) external {
-        versions.push(Version(contentHash, parent, timestamp, msg.sender));
-        // cal fdc verifier contract to verify timestamp, proof and merkle root
-        // import fdc
+    function appendVersion(bytes32 contentHash, uint256 timestamp) external {
+        uint256 parent;
+        if (versions.length == 0) {
+            parent = 0;
+        } else {
+            parent = versions.length - 1;
+        }
+        versions.push(Version({ contentHash: contentHash, parent: parent, timestamp: timestamp, author: msg.sender }));
     }
 
     function retrieveVersion(uint256 index) external view returns (Version memory) {
@@ -29,15 +26,11 @@ contract VersionHistory {
     }
 
     function retrieveLatestVersionTimestamp() external view returns (uint256) {
-        if (versions.length == 0) {
-            revert("No versions available");
-        }
+        require(versions.length > 0, "No versions available");
         return versions[versions.length - 1].timestamp;
     }
 
-    
     function getVersionCount() external view returns (uint256) {
         return versions.length;
     }
-
 }
